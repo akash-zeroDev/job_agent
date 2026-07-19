@@ -1,0 +1,46 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [vector]
+}
+
+model User {
+  id                 String         @id @default(uuid())
+  email              String         @unique
+  onboardingComplete Boolean        @default(false)
+  defaultTemplate    String?
+  primaryRole        String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  masterProfile      MasterProfile?
+}
+
+model MasterProfile {
+  id            String         @id @default(uuid())
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  extractedJson Json?
+  lastSynced    DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  chunks        ProfileChunk[]
+}
+
+model ProfileChunk {
+  id              String        @id @default(uuid())
+  masterProfileId String
+  masterProfile   MasterProfile @relation(fields: [masterProfileId], references: [id], onDelete: Cascade)
+  chunkType       String
+  content         String        @db.Text
+  embedding       Unsupported("vector(1536)")?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+}
